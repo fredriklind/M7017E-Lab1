@@ -12,6 +12,7 @@ public:
     explicit VideoContainer(QWidget *parent = 0);
     void initVideo(QString);
     int totalDuration;
+    bool seekMutex;
 
 private:
     GstElement *v_pipeline;
@@ -20,15 +21,18 @@ private:
     void setState(GstState state);
     QTimer *timer;
     bool didInitVideo;
+    void abortVideo();
 
 signals:
     void videoTimerEvent(VideoInfo);
     void videoDidInit();
     void videoStateDidChange();
+    void videoError();
 
 public slots:
     void pauseVideo();
     void playVideo();
+    void seekVideo(int);
 
 private slots:
     void internalVideoTimerEvent();

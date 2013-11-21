@@ -48,7 +48,9 @@ void VideoContainer::initVideo(QString videoPath)
     this->timer->start(TIMER_INTERVAL);
 
     this->didInitVideo = true;
+    this->playVideo();
     emit videoDidInit();
+
 }
 
 /* Public slots */
@@ -69,10 +71,21 @@ void VideoContainer::setState(GstState state)
 
         if(stateChangeResult == GST_STATE_CHANGE_FAILURE){
             qDebug() << "Could not change state";
+            abortVideo();
         } else {
             emit videoStateDidChange();
         }
     }
+}
+
+void VideoContainer::seekVideo(int value){
+    if(!seekMutex)
+    gst_element_seek_simple (this->v_pipeline, GST_FORMAT_TIME, (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT), (gint64)(value * GST_SECOND));
+}
+
+void VideoContainer::abortVideo(){
+    this->timer->stop();
+    emit videoError();
 }
 
 GstState VideoContainer::getState(){
@@ -80,6 +93,7 @@ GstState VideoContainer::getState(){
     GstStateChangeReturn stateQueryResult;
     stateQueryResult = gst_element_get_state(this->v_pipeline, &currState, NULL, GST_SECOND / 3);
     if(stateQueryResult == GST_STATE_CHANGE_FAILURE){
+        abortVideo();
         qDebug() << "Could not query state";
     }
     return currState;
@@ -102,6 +116,7 @@ void VideoContainer::internalVideoTimerEvent()
     if (!GST_CLOCK_TIME_IS_VALID (totalDuration)) {
         if (!gst_element_query_duration (this->v_pipeline, &fmt, &totalDuration)) {
             g_printerr ("Could not query current duration.\n");
+            abortVideo();
         } else {
             this->totalDuration = (int)((gdouble)totalDuration / GST_SECOND);
         }

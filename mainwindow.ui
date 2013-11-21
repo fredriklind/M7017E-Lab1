@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1004</width>
-    <height>618</height>
+    <width>885</width>
+    <height>504</height>
    </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
@@ -33,11 +39,13 @@
     <item>
      <widget class="VideoContainer" name="videocontainer" native="true">
       <property name="autoFillBackground">
-       <bool>true</bool>
+       <bool>false</bool>
       </property>
       <property name="styleSheet">
        <string notr="true">background:black;</string>
       </property>
+      <zorder>widget</zorder>
+      <zorder>widget</zorder>
      </widget>
     </item>
     <item>
@@ -63,6 +71,22 @@
        </widget>
       </item>
       <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
        <widget class="QLabel" name="currentTimeLabel">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -79,12 +103,45 @@
        <widget class="QSlider" name="slider">
         <property name="sizePolicy">
          <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
+          <horstretch>1</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
+        <property name="styleSheet">
+         <string notr="true"> QSlider::groove:horizontal {
+     border: 1px solid #f4f4f4;
+     height: 6px; /* the groove expands to the size of the slider by default. by giving it a height, it has a fixed size */
+     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4c4c4, stop:1 #e6e6e6);
+     margin: 2px 0;
+     border-radius: 2px;
+ }
+
+ QSlider::handle:horizontal {
+     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #c4c4c4, stop:1 #e6e6e6);
+     border: 1px solid #5c5c5c;
+     width: 15px;
+     margin: -5px 0; /* handle is placed by default on the contents rect of the groove. Expand outside the groove */
+     border-radius: 8px;
+ }
+
+ QSlider::add-page:horizontal {
+     background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #B1B1B1, stop:1 #c4c4c4);
+     border-top-right-radius: 4px;
+     border-bottom-right-radius: 4px;
+ }
+
+ QSlider::sub-page:horizontal {
+     border-top-left-radius: 4px;
+     border-bottom-left-radius: 4px;
+     opacity: 1;
+     background: #007FE0;
+ }</string>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="tickPosition">
+         <enum>QSlider::NoTicks</enum>
         </property>
        </widget>
       </item>
@@ -97,7 +154,7 @@
          </sizepolicy>
         </property>
         <property name="text">
-         <string>14:00</string>
+         <string>00:00</string>
         </property>
        </widget>
       </item>
@@ -106,6 +163,9 @@
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::MinimumExpanding</enum>
+        </property>
         <property name="sizeHint" stdset="0">
          <size>
           <width>40</width>
@@ -113,6 +173,20 @@
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="backwardButton">
+        <property name="text">
+         <string>Rewind</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="forwardButton">
+        <property name="text">
+         <string>Forward</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </item>
@@ -124,7 +198,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1004</width>
+     <width>885</width>
      <height>22</height>
     </rect>
    </property>

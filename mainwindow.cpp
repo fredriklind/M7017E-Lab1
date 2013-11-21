@@ -4,22 +4,97 @@
 #include "videoinfo.h"
 #include <QDebug>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QTimer>
+#include <QSlider>
+
+#define WIND_AMOUNT 3
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+    this->setWindowTitle("ZyberPlayer");
     this->createMenu();
+    this->shouldRespondToVideoTimerEvents = true;
 
     // Signals from UI
     connect(ui->pauseButton, SIGNAL(clicked()), ui->videocontainer, SLOT(pauseVideo()));
     connect(ui->playButton, SIGNAL(clicked()), ui->videocontainer, SLOT(playVideo()));
+    connect(ui->slider, SIGNAL(valueChanged(int)), ui->videocontainer, SLOT(seekVideo(int)));
+
+    //Forward
+    connect(ui->forwardButton, SIGNAL(pressed()), this, SLOT(windStartEast()));
+    connect(ui->forwardButton, SIGNAL(released()), this, SLOT(windEnd()));
+
+    //Backward
+    connect(ui->backwardButton, SIGNAL(pressed()), this, SLOT(windStartWest()));
+    connect(ui->backwardButton, SIGNAL(released()), this, SLOT(windEnd()));
 
     // Signals from VideoContainer
+    connect(ui->videocontainer, SIGNAL(videoDidInit()), this, SLOT(videoInit()));
+    connect(ui->videocontainer, SIGNAL(videoError()), this, SLOT(videoError()));
     connect(ui->videocontainer, SIGNAL(videoTimerEvent(VideoInfo)), this, SLOT(updateUI(VideoInfo)));
+}
 
+// Called when the video has been initialized
+void MainWindow::videoInit(){
+    qDebug() << "Video is initialized!";
+    this->windTimer = new QTimer(this);
+    connect(this->windTimer, SIGNAL(timeout()), this, SLOT(windLoop()));
+}
 
+// Start fast forwariding
+void MainWindow::windStartEast(){
+    this->shouldRespondToVideoTimerEvents = false;
+    this->windDirection = WIND_DIRECTION_EAST;
+    this->windTimer->start(500);
+}
+
+// Start rewinding
+void MainWindow::windStartWest(){
+    this->shouldRespondToVideoTimerEvents = false;
+    this->windDirection = WIND_DIRECTION_WEST;
+    this->windTimer->start(500);
+}
+
+// While fast forwarding / rewinding
+void MainWindow::windLoop(){
+    if(this->windDirection == WIND_DIRECTION_EAST){
+        ui->slider->setValue(ui->slider->value() + WIND_AMOUNT);
+        ui->currentTimeLabel->setNum(ui->slider->value() + WIND_AMOUNT);
+    }
+
+    if(this->windDirection == WIND_DIRECTION_WEST){
+        ui->slider->setValue(ui->slider->value() - WIND_AMOUNT);
+        ui->currentTimeLabel->setNum(ui->slider->value() - WIND_AMOUNT);
+    }
+}
+
+void MainWindow::windEnd(){
+    this->shouldRespondToVideoTimerEvents = true;
+    this->windTimer->stop();
+}
+
+void MainWindow::videoError(){
+    QMessageBox msgBox;
+    msgBox.setText("Error while playing the video file.");
+    msgBox.setInformativeText("Choose another file.");
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    msgBox.exec();
+}
+
+void MainWindow::openFile()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open"),"", tr("Files (*.*)"));
+    //QString fileName = "/Users/fredriklind/Desktop/big-buck-bunny_trailer.webm";
+    if(fileName != NULL){
+        qDebug() << "Filename is: " << fileName;
+        this->setWindowTitle(fileName);
+        ui->videocontainer->initVideo(fileName);
+    }
 }
 
 void MainWindow::createMenu()
@@ -33,34 +108,70 @@ void MainWindow::createMenu()
     //Create menu item
     fileMenu = ui->menu->addMenu(tr("&File"));
     fileMenu->addAction(openAct);
+
+    //Initialize the action
+    fsAct = new QAction(tr("&Fullscreen"), this);
+    fsAct->setShortcuts(QKeySequence::FullScreen);
+    fsAct->setStatusTip(tr("View the video in fullscreen mode"));
+    connect(fsAct, SIGNAL(triggered()), this, SLOT(fullscreenMode()));
+
+    //Create menu item
+    viewMenu = ui->menu->addMenu(tr("&View"));
+    viewMenu->addAction(fsAct);
 }
 
-void MainWindow::openFile()
-{
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open"),"", tr("Files (*.*)"));
-
-    if(fileName != NULL){
-        qDebug() << "Filename is: " << fileName;
-        ui->videocontainer->initVideo(fileName);
+void MainWindow::fullscreenMode(){
+    if(this->isFullScreen()){
+        ui->pauseButton->show();
+        ui->playButton->show();
+        ui->slider->show();
+        ui->forwardButton->show();
+        ui->backwardButton->show();
+        ui->currentTimeLabel->show();
+        ui->totalDurationLabel->show();
+        ui->statusBar->show();
+        this->showNormal();
+    } else {
+        ui->pauseButton->hide();
+        ui->playButton->hide();
+        ui->slider->hide();
+        ui->forwardButton->hide();
+        ui->backwardButton->hide();
+        ui->currentTimeLabel->hide();
+        ui->totalDurationLabel->hide();
+        ui->statusBar->hide();
+        this->showFullScreen();
     }
 }
 
 void MainWindow::updateUI(VideoInfo info)
 {
-    ui->slider->setRange(0, info.totalDuration);
-    ui->slider->setValue(info.currentTime);
+    if(this->shouldRespondToVideoTimerEvents){
+        ui->slider->setRange(0, info.totalDuration);
 
-    //Set time labels
-    /*if(info.currentTime){
-        int time = info.currentTime;
-        int min=time/60;
-        time=time%60;
-        int sec=time;
+        ui->videocontainer->seekMutex = true;
+        ui->slider->setValue(info.currentTime);
+        ui->videocontainer->seekMutex = false;
 
-        char *timeString;
-        sprintf(timeString, "%i:%i", min, sec);
-        ui->currentTimeLabel->setText(timeString);
-    }*/
+        ui->totalDurationLabel->setNum(info.totalDuration);
+        ui->currentTimeLabel->setNum(info.currentTime);
+    }
+}
+
+/* Generated slots (withouth explicit connections) */
+void MainWindow::on_slider_sliderMoved(int position)
+{
+    ui->currentTimeLabel->setNum(position);
+}
+
+void MainWindow::on_slider_sliderPressed()
+{
+    this->shouldRespondToVideoTimerEvents = false;
+}
+
+void MainWindow::on_slider_sliderReleased()
+{
+    this->shouldRespondToVideoTimerEvents = true;
 }
 
 // Destructor
