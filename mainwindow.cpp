@@ -3,6 +3,7 @@
 #include "videocontainer.h"
 #include "videoinfo.h"
 #include <QDebug>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -18,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
     // Signals from VideoContainer
     connect(ui->videocontainer, SIGNAL(videoTimerEvent(VideoInfo)), this, SLOT(updateUI(VideoInfo)));
 
-    ui->videocontainer->initVideo(NULL);
+
 }
 
 void MainWindow::createMenu()
@@ -36,13 +37,30 @@ void MainWindow::createMenu()
 
 void MainWindow::openFile()
 {
-    qDebug() << "Open file!";
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open"),"", tr("Files (*.*)"));
+
+    if(fileName != NULL){
+        qDebug() << "Filename is: " << fileName;
+        ui->videocontainer->initVideo(fileName);
+    }
 }
 
 void MainWindow::updateUI(VideoInfo info)
 {
     ui->slider->setRange(0, info.totalDuration);
     ui->slider->setValue(info.currentTime);
+
+    //Set time labels
+    /*if(info.currentTime){
+        int time = info.currentTime;
+        int min=time/60;
+        time=time%60;
+        int sec=time;
+
+        char *timeString;
+        sprintf(timeString, "%i:%i", min, sec);
+        ui->currentTimeLabel->setText(timeString);
+    }*/
 }
 
 // Destructor

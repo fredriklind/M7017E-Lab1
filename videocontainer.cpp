@@ -13,11 +13,11 @@ VideoContainer::VideoContainer(QWidget *parent) :
 
 }
 
-void VideoContainer::initVideo(const char *videoURL)
+void VideoContainer::initVideo(QString videoPath)
 {
     gst_init (NULL, NULL);
 
-    // Creating the pipeline and the two sinks
+    // Creating a pipeline and the two sinks
     this->v_pipeline = gst_element_factory_make("playbin2", "player");
     GstElement *videosink = gst_element_factory_make("ximagesink", "video-sink");
     GstElement *audiosink = gst_element_factory_make("alsasink", "audiosink");
@@ -26,13 +26,17 @@ void VideoContainer::initVideo(const char *videoURL)
     g_object_set(G_OBJECT(this->v_pipeline),"audio-sink", audiosink,"video-sink", videosink,NULL);
     g_object_set(G_OBJECT(this->v_pipeline), "video-sink", videosink, NULL);
 
-    if(videoURL){
-        g_object_set(G_OBJECT(this->v_pipeline), "uri",videoURL, NULL);
-    } else {
-        g_object_set(G_OBJECT(this->v_pipeline), "uri","file://localhost/Users/fredriklind/sintel_trailer-480p.webm", NULL);
-    }
-
     this->setState(GST_STATE_READY);
+
+    // Construct the path and load the uri
+    if(videoPath != "" || videoPath != NULL){
+        QString path = "file://localhost" + videoPath;
+        const char *uri = path.toStdString().c_str();
+        g_object_set(G_OBJECT(this->v_pipeline), "uri", uri, NULL);
+    } else {
+        //Abort init
+        return;
+    }
 
     // Attatch the GStreamer video to the VideoContainer
     if(this->v_pipeline && GST_IS_X_OVERLAY(this->v_pipeline)){
@@ -43,6 +47,7 @@ void VideoContainer::initVideo(const char *videoURL)
     connect(this->timer, SIGNAL(timeout()), this, SLOT(internalVideoTimerEvent()));
     this->timer->start(TIMER_INTERVAL);
 
+    this->didInitVideo = true;
     emit videoDidInit();
 }
 
@@ -59,38 +64,62 @@ void VideoContainer::playVideo()
 
 void VideoContainer::setState(GstState state)
 {
-    gst_element_set_state(this->v_pipeline, state);
-    this->state = state;
-    emit videoStateDidChange();
+    if(this->didInitVideo){
+        GstStateChangeReturn stateChangeResult = gst_element_set_state(this->v_pipeline, state);
+
+        if(stateChangeResult == GST_STATE_CHANGE_FAILURE){
+            qDebug() << "Could not change state";
+        } else {
+            emit videoStateDidChange();
+        }
+    }
 }
 
-// Internal slot
+GstState VideoContainer::getState(){
+    GstState currState;
+    GstStateChangeReturn stateQueryResult;
+    stateQueryResult = gst_element_get_state(this->v_pipeline, &currState, NULL, GST_SECOND / 3);
+    if(stateQueryResult == GST_STATE_CHANGE_FAILURE){
+        qDebug() << "Could not query state";
+    }
+    return currState;
+}
+
+/* This method (that is a private slot) is called every TIMER_INTERVAL by this->timer and it's responsibility
+*  is to get total duration and current time of the video and send it to whoever is
+*  listening to the videoTimerEvent(Videoinfo) signal.
+*/
 void VideoContainer::internalVideoTimerEvent()
 {
+    /* Only run this method if video is PLAYING */
+    if (this->getState() != GST_STATE_PLAYING) return;
+
     gint64 totalDuration = GST_CLOCK_TIME_NONE;
     GstFormat fmt = GST_FORMAT_TIME;
     gint64 current = -1;
 
-    /* Continue only if PLAYING */
-    if (this->state != GST_STATE_PLAYING)
-        return;
-
-    /* Fix total duration if it's not set */
+    // Get total duration of video (in seconds)
     if (!GST_CLOCK_TIME_IS_VALID (totalDuration)) {
-      if (!gst_element_query_duration (this->v_pipeline, &fmt, &totalDuration)) {
-        g_printerr ("Could not query current duration.\n");
-      } else {
-          this->totalDuration = (int)((gdouble)totalDuration / GST_SECOND);
-      }
+        if (!gst_element_query_duration (this->v_pipeline, &fmt, &totalDuration)) {
+            g_printerr ("Could not query current duration.\n");
+        } else {
+            this->totalDuration = (int)((gdouble)totalDuration / GST_SECOND);
+        }
     }
 
+    // Get current location in video (in seconds)
     if (gst_element_query_position (this->v_pipeline, &fmt, &current)) {
-      this->currentTime = (int)((gdouble)current / GST_SECOND);
+        int newCurrentTime = (int)((gdouble)current / GST_SECOND);
+
+        //Error checking, sometimes currentTime becomes WAY big
+        if(newCurrentTime <= this->totalDuration){
+            this->currentTime = newCurrentTime;
+        }
     }
 
-    // Construct info
+    // Construct info & notify observers
     VideoInfo info;
-    info.state          = this->state;
+    info.state          = this->getState();
     info.currentTime    = this->currentTime;
     info.totalDuration  = this->totalDuration;
 

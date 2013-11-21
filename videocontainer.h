@@ -10,15 +10,16 @@ class VideoContainer : public QWidget
     Q_OBJECT
 public:
     explicit VideoContainer(QWidget *parent = 0);
-    void initVideo(const char *);
+    void initVideo(QString);
     int totalDuration;
 
 private:
     GstElement *v_pipeline;
     long currentTime;
-    GstState state;
+    GstState getState();
     void setState(GstState state);
     QTimer *timer;
+    bool didInitVideo;
 
 signals:
     void videoTimerEvent(VideoInfo);
