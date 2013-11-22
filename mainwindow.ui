@@ -38,6 +38,12 @@
     </property>
     <item>
      <widget class="VideoContainer" name="videocontainer" native="true">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>1</verstretch>
+       </sizepolicy>
+      </property>
       <property name="autoFillBackground">
        <bool>false</bool>
       </property>
@@ -51,7 +57,7 @@
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout">
       <property name="sizeConstraint">
-       <enum>QLayout::SetFixedSize</enum>
+       <enum>QLayout::SetNoConstraint</enum>
       </property>
       <item>
        <widget class="QPushButton" name="playButton">

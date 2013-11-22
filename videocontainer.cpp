@@ -79,12 +79,13 @@ void VideoContainer::setState(GstState state)
 }
 
 void VideoContainer::seekVideo(int value){
-    if(!seekMutex)
+    if(!seekMutex && this->didInitVideo)
     gst_element_seek_simple (this->v_pipeline, GST_FORMAT_TIME, (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT), (gint64)(value * GST_SECOND));
 }
 
 void VideoContainer::abortVideo(){
     this->timer->stop();
+    this->didInitVideo = false;
     emit videoError();
 }
 

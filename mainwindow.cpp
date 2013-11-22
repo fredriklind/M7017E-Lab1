@@ -10,6 +10,10 @@
 
 #define WIND_AMOUNT 3
 
+
+/**
+* Handles all UI and user interaction.
+*/
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -38,28 +42,40 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->videocontainer, SIGNAL(videoTimerEvent(VideoInfo)), this, SLOT(updateUI(VideoInfo)));
 }
 
-// Called when the video has been initialized
+/**
+ * Slot called when the video has been initialized
+*/
 void MainWindow::videoInit(){
     qDebug() << "Video is initialized!";
     this->windTimer = new QTimer(this);
     connect(this->windTimer, SIGNAL(timeout()), this, SLOT(windLoop()));
 }
 
-// Start fast forwariding
+/**
+ * Start fast forwariding
+*/
 void MainWindow::windStartEast(){
+    if(!this->windTimer) return;
+    ui->videocontainer->pauseVideo();
     this->shouldRespondToVideoTimerEvents = false;
     this->windDirection = WIND_DIRECTION_EAST;
     this->windTimer->start(500);
 }
 
-// Start rewinding
+/**
+ * Start rewinding
+*/
 void MainWindow::windStartWest(){
+    if(!this->windTimer) return;
+    ui->videocontainer->pauseVideo();
     this->shouldRespondToVideoTimerEvents = false;
     this->windDirection = WIND_DIRECTION_WEST;
     this->windTimer->start(500);
 }
 
-// While fast forwarding / rewinding
+/**
+ * This is the loop that seeks in the video when a user is pressing the ff/backward buttons
+*/
 void MainWindow::windLoop(){
     if(this->windDirection == WIND_DIRECTION_EAST){
         ui->slider->setValue(ui->slider->value() + WIND_AMOUNT);
@@ -73,8 +89,10 @@ void MainWindow::windLoop(){
 }
 
 void MainWindow::windEnd(){
+    if(!this->windTimer) return;
     this->shouldRespondToVideoTimerEvents = true;
     this->windTimer->stop();
+    ui->videocontainer->playVideo();
 }
 
 void MainWindow::videoError(){
@@ -158,7 +176,6 @@ void MainWindow::updateUI(VideoInfo info)
     }
 }
 
-/* Generated slots (withouth explicit connections) */
 void MainWindow::on_slider_sliderMoved(int position)
 {
     ui->currentTimeLabel->setNum(position);
