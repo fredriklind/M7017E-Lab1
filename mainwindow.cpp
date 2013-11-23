@@ -10,9 +10,6 @@
 
 #define WIND_AMOUNT 3
 
-/**
-* @brief Handles all UI and user interaction.
-*/
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -48,6 +45,7 @@ void MainWindow::videoInit(){
     qDebug() << "Video is initialized!";
     this->windTimer = new QTimer(this);
     connect(this->windTimer, SIGNAL(timeout()), this, SLOT(windLoop()));
+    ui->slider->setValue(0);
 }
 
 /**

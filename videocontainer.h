@@ -5,6 +5,9 @@
 #include <gst/gst.h>
 #include "mainwindow.h"
 
+/**
+ * @brief Handles playback of a video file. Provides signals for updates about video state and errors.
+ */
 class VideoContainer : public QWidget
 {
     Q_OBJECT

@@ -5,14 +5,27 @@
 #include <QTimer>
 #include "videoinfo.h"
 
+/** Interval between calls to internalVideoTimerEvent() */
 #define TIMER_INTERVAL 1000
 
+/**
+ * @brief Handles playback of a video file. Provides signals for updates on video state and errors.
+ */
 VideoContainer::VideoContainer(QWidget *parent) :
     QWidget(parent)
 {
-
+    this->didInitVideo = false;
 }
 
+/**
+ * @brief Initiates a video for playback. Sets up a new GStreamer playbin2 and sets the appropriate
+ * attributes for the video to be played. The path is assumed to have to have "file://localhost" prepended
+ * to it. This may not be the case on all platforms. A check for this may have to be implemented for cross platform
+ * compability. Emits the videoDidInit() sigal when finished, even if the video cannot be played. Playback errors
+ * are catched in the internalVideoTimerEvent() method, that is called every TIMER_INTERVAL.
+ *
+ * @param videoPath The local path of the video to be played
+ */
 void VideoContainer::initVideo(QString videoPath)
 {
     gst_init (NULL, NULL);
@@ -50,20 +63,28 @@ void VideoContainer::initVideo(QString videoPath)
     this->didInitVideo = true;
     this->playVideo();
     emit videoDidInit();
-
 }
 
-/* Public slots */
+/**
+ * @brief Slot to pause video playback
+ */
 void VideoContainer::pauseVideo()
 {
     this->setState(GST_STATE_PAUSED);
 }
 
+/**
+ * @brief Slot for starting video playback
+ */
 void VideoContainer::playVideo()
 {
     this->setState(GST_STATE_PLAYING);
 }
 
+/**
+ * @brief Sets the state of the playbin, does nothing if no video has been initialized.
+ * @param state The state to change to
+ */
 void VideoContainer::setState(GstState state)
 {
     if(this->didInitVideo){
@@ -78,17 +99,28 @@ void VideoContainer::setState(GstState state)
     }
 }
 
+/**
+ * @brief Puts the current time of the video at the specified seek time.
+ * @param value Where (in seconds) to seek in the video
+ */
 void VideoContainer::seekVideo(int value){
     if(!seekMutex && this->didInitVideo)
     gst_element_seek_simple (this->v_pipeline, GST_FORMAT_TIME, (GstSeekFlags)(GST_SEEK_FLAG_FLUSH | GST_SEEK_FLAG_KEY_UNIT), (gint64)(value * GST_SECOND));
 }
 
+/**
+ * @brief Used when a playback error was encountered. Rolls back video initialization and stops the internal timer.
+ */
 void VideoContainer::abortVideo(){
     this->timer->stop();
     this->didInitVideo = false;
     emit videoError();
 }
 
+/**
+ * @brief Queries the state of the playbin
+ * @return The current state of the playbin
+ */
 GstState VideoContainer::getState(){
     GstState currState;
     GstStateChangeReturn stateQueryResult;
@@ -100,7 +132,8 @@ GstState VideoContainer::getState(){
     return currState;
 }
 
-/* This method (that is a private slot) is called every TIMER_INTERVAL by this->timer and it's responsibility
+/**
+* @brief This method (that is a private slot) is called every TIMER_INTERVAL by this->timer and it's responsibility
 *  is to get total duration and current time of the video and send it to whoever is
 *  listening to the videoTimerEvent(Videoinfo) signal.
 */

@@ -5,10 +5,12 @@
 #include <gst/gst.h>
 #include "videoinfo.h"
 
-// Used for fast forward/backward
+/**
+* @brief Used for fast forward/backward
+*/
 typedef enum {
-    WIND_DIRECTION_WEST             = 0,
-    WIND_DIRECTION_EAST             = 1
+    WIND_DIRECTION_WEST             = 0, /**< Play the video backwards */
+    WIND_DIRECTION_EAST             = 1 /**< Play the video forwards */
 } WindDirection;
 //----
 
@@ -16,6 +18,10 @@ namespace Ui {
 class MainWindow;
 }
 
+/**
+* @brief Handles all UI and user interaction. Signals the video container on UI events, responds to
+* videocontainer signals.
+*/
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
