@@ -10,9 +10,8 @@
 
 #define WIND_AMOUNT 3
 
-
 /**
-* Handles all UI and user interaction.
+* @brief Handles all UI and user interaction.
 */
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -43,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 
 /**
- * Slot called when the video has been initialized
+ * @brief Slot called when the video has been initialized
 */
 void MainWindow::videoInit(){
     qDebug() << "Video is initialized!";
@@ -52,7 +51,7 @@ void MainWindow::videoInit(){
 }
 
 /**
- * Start fast forwariding
+ * @brief Start fast forwariding
 */
 void MainWindow::windStartEast(){
     if(!this->windTimer) return;
@@ -63,7 +62,7 @@ void MainWindow::windStartEast(){
 }
 
 /**
- * Start rewinding
+ * @brief Start rewinding
 */
 void MainWindow::windStartWest(){
     if(!this->windTimer) return;
@@ -74,7 +73,7 @@ void MainWindow::windStartWest(){
 }
 
 /**
- * This is the loop that seeks in the video when a user is pressing the ff/backward buttons
+ * @brief This is the loop that seeks in the video when a user is pressing the ff/backward buttons
 */
 void MainWindow::windLoop(){
     if(this->windDirection == WIND_DIRECTION_EAST){
@@ -88,6 +87,9 @@ void MainWindow::windLoop(){
     }
 }
 
+/**
+ * @brief Stops fast forward/backward
+ */
 void MainWindow::windEnd(){
     if(!this->windTimer) return;
     this->shouldRespondToVideoTimerEvents = true;
@@ -95,6 +97,9 @@ void MainWindow::windEnd(){
     ui->videocontainer->playVideo();
 }
 
+/**
+ * @brief This slot is signaled when the videocontainer has any kind of error;
+ */
 void MainWindow::videoError(){
     QMessageBox msgBox;
     msgBox.setText("Error while playing the video file.");
@@ -104,6 +109,9 @@ void MainWindow::videoError(){
     msgBox.exec();
 }
 
+/**
+ * @brief Gets a file path from the system using a file open dialog and passes the path to the videocontainer, initializing it.
+ */
 void MainWindow::openFile()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open"),"", tr("Files (*.*)"));
@@ -115,6 +123,9 @@ void MainWindow::openFile()
     }
 }
 
+/**
+ * @brief Creates the drop down menus, such as "File", and "View" and their corresponding menu items.
+ */
 void MainWindow::createMenu()
 {
     //Initialize the action
@@ -138,6 +149,9 @@ void MainWindow::createMenu()
     viewMenu->addAction(fsAct);
 }
 
+/**
+ * @brief Puts the app in fullscreen mode, hiding all of the playback controls
+ */
 void MainWindow::fullscreenMode(){
     if(this->isFullScreen()){
         ui->pauseButton->show();
@@ -162,6 +176,13 @@ void MainWindow::fullscreenMode(){
     }
 }
 
+/**
+ * @brief This slot is caleld every time the videocontainer emits the VideoTimerEvent() signal
+ * it is responsible for updating the UI so that it accurately represents the state of the video
+ * being played. This method can be made "inactive" by setting shouldRespondToVideoTimerEvents on
+ * MainWindow.
+ * @param info Provides info about the current state of the video being played.
+ */
 void MainWindow::updateUI(VideoInfo info)
 {
     if(this->shouldRespondToVideoTimerEvents){
@@ -176,22 +197,37 @@ void MainWindow::updateUI(VideoInfo info)
     }
 }
 
+/**
+ * @brief Called every time when the user moves the slider. This method makes sure that the current
+ * time is instantly updated to reflect where the slider is at any given time.
+ * @param position The position that the slider was moved to.
+ */
 void MainWindow::on_slider_sliderMoved(int position)
 {
     ui->currentTimeLabel->setNum(position);
 }
 
+/**
+ * @brief Makes sure that the UI is not updated when the user "holds" the slider handle. This
+ * prevents the slider handle from "fighting" the user when the user really should be in control
+ * of the handle.
+ */
 void MainWindow::on_slider_sliderPressed()
 {
     this->shouldRespondToVideoTimerEvents = false;
 }
 
+/**
+ * @brief Gives back control of the slider handle to MainWindow.
+ */
 void MainWindow::on_slider_sliderReleased()
 {
     this->shouldRespondToVideoTimerEvents = true;
 }
 
-// Destructor
+/**
+ * @brief Destroys the UI object
+ */
 MainWindow::~MainWindow()
 {
     delete ui;
